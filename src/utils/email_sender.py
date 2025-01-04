@@ -4,26 +4,33 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional, TypedDict
+from typing import List, Dict, Optional, TypedDict, NamedTuple
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 
-class TradingSummary(TypedDict, total=False):
+class TradingSummaryRequired(TypedDict, total=True):
+    # Required fields
     total_trades: int
-    spx_base_price: float
-    spx_final_price: float
-    total_spx_drop: float
-    symbol: str
-    entry_price: float
     trading_mode: str
+    symbol: str
+
+class TradingSummary(TradingSummaryRequired, total=False):
+    # Optional fields
+    spx_base_price: Optional[float]
+    spx_final_price: Optional[float]
+    total_spx_drop: Optional[float]
+    entry_price: Optional[float]
+
+class SmtpConfig(NamedTuple):
+    server: str = "smtp.gmail.com"
+    port: int = 587
 
 class EmailSender:
     def __init__(self, raise_on_missing_credentials: bool = False) -> None:
-        self.smtp_server = "smtp.gmail.com"
-        self.smtp_port = 587
-
+        self.smtp_config = SmtpConfig()
+        
         # Initialize credentials
         sender_email = os.getenv('TRADING_EMAIL')
         sender_password = os.getenv('TRADING_EMAIL_PASSWORD')
@@ -52,7 +59,6 @@ class EmailSender:
         try:
             # Create message
             msg = MIMEMultipart()
-            # Now we know sender_email is str due to is_configured check
             msg['From'] = str(self.sender_email)
             msg['To'] = recipient_email
             msg['Subject'] = f"Trading Report - {datetime.now().strftime('%Y-%m-%d')}"
@@ -74,9 +80,8 @@ class EmailSender:
                         msg.attach(attachment)
 
             # Send email
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_config.server, self.smtp_config.port) as server:
                 server.starttls()
-                # We've already checked these are not None
                 assert self.sender_email is not None
                 assert self.sender_password is not None
                 server.login(self.sender_email, self.sender_password)
@@ -91,6 +96,11 @@ class EmailSender:
 
     def _create_email_body(self, trading_summary: TradingSummary) -> str:
         """Create HTML email body with trading summary"""
+        spx_base = trading_summary.get('spx_base_price', 0.0)
+        spx_final = trading_summary.get('spx_final_price', 0.0)
+        spx_drop = trading_summary.get('total_spx_drop', 0.0)
+        entry_price = trading_summary.get('entry_price', 0.0)
+
         return f"""
         <html>
         <body>
@@ -99,17 +109,17 @@ class EmailSender:
             
             <h3>Trading Summary:</h3>
             <ul>
-                <li>Total Trades: {trading_summary.get('total_trades', 0)}</li>
-                <li>SPX Base Price: ${trading_summary.get('spx_base_price', 0):.2f}</li>
-                <li>SPX Final Price: ${trading_summary.get('spx_final_price', 0):.2f}</li>
-                <li>Total SPX Drop: {trading_summary.get('total_spx_drop', 0):.2f}%</li>
+                <li>Total Trades: {trading_summary['total_trades']}</li>
+                <li>SPX Base Price: ${spx_base:.2f}</li>
+                <li>SPX Final Price: ${spx_final:.2f}</li>
+                <li>Total SPX Drop: {spx_drop:.2f}%</li>
             </ul>
 
             <h3>Trading Details:</h3>
             <ul>
-                <li>Symbol: {trading_summary.get('symbol', 'N/A')}</li>
-                <li>Entry Price: ${trading_summary.get('entry_price', 0):.2f}</li>
-                <li>Trading Mode: {trading_summary.get('trading_mode', 'N/A')}</li>
+                <li>Symbol: {trading_summary['symbol']}</li>
+                <li>Entry Price: ${entry_price:.2f}</li>
+                <li>Trading Mode: {trading_summary['trading_mode']}</li>
             </ul>
 
             <p>Please find the detailed reports attached.</p>

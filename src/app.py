@@ -22,13 +22,15 @@ class TradingApp:
         self.email_sender = EmailSender(raise_on_missing_credentials=False)
         self.spx_base_price: Optional[float] = None
         self.trading_summary: TradingSummary = {
+            # Required fields
             'total_trades': 0,
-            'spx_base_price': 0.0,
-            'spx_final_price': 0.0,
-            'total_spx_drop': 0.0,
-            'symbol': '',
-            'entry_price': 0.0,
-            'trading_mode': ''
+            'trading_mode': 'Unknown',
+            'symbol': 'Unknown',
+            # Optional fields
+            'spx_base_price': None,
+            'spx_final_price': None,
+            'total_spx_drop': None,
+            'entry_price': None
         }
 
     def connect_to_server(self, port: int) -> bool:
