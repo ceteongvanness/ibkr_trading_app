@@ -122,6 +122,7 @@ kubectl logs -f deployment/ibkr-trading-app -n trading
 ## Project Structure
 
 The project follows a modular structure:
+```
 ibkr_trading_app/
 ├── .github/                  # GitHub specific configurations
 │   └── workflows/           # GitHub Actions workflows
@@ -179,6 +180,7 @@ ibkr_trading_app/
 ├── run.py              # Local run script
 ├── setup.cfg           # Package configuration
 └── setup.py            # Package setup file
+```
 
 ## Development
 
