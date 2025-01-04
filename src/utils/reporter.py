@@ -1,22 +1,16 @@
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
-from ..config import TradingConfig  # Updated import path
+from typing import Optional, List
 
 class Reporter:
     def __init__(self):
-        self.config = TradingConfig()
         self.transactions = []
+        self.reports_dir = Path("trading_records/reports")
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
 
-    def record_transaction(
-        self,
-        symbol: str,
-        price: float,
-        quantity: int,
-        spx_drop: float,
-        screenshot_path: Optional[Path] = None
-    ):
+    def record_transaction(self, symbol: str, price: float, quantity: int, 
+                         spx_drop: float, screenshot_path: Optional[Path] = None) -> None:
         """Record a trading transaction"""
         transaction = {
             'date': datetime.now(),
@@ -30,15 +24,13 @@ class Reporter:
         
         self.transactions.append(transaction)
         self._save_transaction(transaction)
-        self.generate_report()
 
-    def _save_transaction(self, transaction: dict):
+    def _save_transaction(self, transaction: dict) -> None:
         """Save individual transaction to CSV"""
         try:
             df = pd.DataFrame([transaction])
-            csv_path = self.config.REPORTS_DIR / "transactions.csv"
+            csv_path = self.reports_dir / "transactions.csv"
             
-            # Append or create new file
             if csv_path.exists():
                 df.to_csv(csv_path, mode='a', header=False, index=False)
             else:
@@ -47,56 +39,60 @@ class Reporter:
         except Exception as e:
             print(f"Error saving transaction: {str(e)}")
 
-    def generate_report(self):
-        """Generate HTML and CSV reports"""
+    def generate_report(self) -> List[Path]:
+        """Generate reports and return list of report paths"""
         try:
             if not self.transactions:
-                return
+                return []
+
+            # Create paths
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            csv_path = self.reports_dir / f"trading_report_{timestamp}.csv"
+            html_path = self.reports_dir / f"trading_report_{timestamp}.html"
 
             # Create DataFrame
             df = pd.DataFrame(self.transactions)
             
-            # Generate timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            
             # Save CSV report
-            csv_path = self.config.REPORTS_DIR / f"trading_report_{timestamp}.csv"
             df.to_csv(csv_path, index=False)
             
             # Generate HTML report
-            html_content = f"""
-            <html>
-            <head>
-                <style>
-                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                    table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
-                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                    th {{ background-color: #f5f5f5; }}
-                    tr:nth-child(even) {{ background-color: #f9f9f9; }}
-                    h1, h2 {{ color: #333; }}
-                    .screenshot {{ max-width: 800px; margin: 10px 0; }}
-                </style>
-            </head>
-            <body>
-                <h1>Trading Report</h1>
-                <h2>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</h2>
-                
-                <h2>Transaction Summary</h2>
-                {df.to_html(classes='table')}
-                
-                <h2>Screenshots</h2>
-                {self._generate_screenshot_html()}
-            </body>
-            </html>
-            """
+            html_content = self._generate_html_report(df)
+            html_path.write_text(html_content)
             
-            # Save HTML report
-            html_path = self.config.REPORTS_DIR / f"trading_report_{timestamp}.html"
-            with open(html_path, 'w') as f:
-                f.write(html_content)
+            return [csv_path, html_path]
                 
         except Exception as e:
             print(f"Error generating report: {str(e)}")
+            return []
+
+    def _generate_html_report(self, df: pd.DataFrame) -> str:
+        """Generate HTML report content"""
+        return f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background-color: #f5f5f5; }}
+                tr:nth-child(even) {{ background-color: #f9f9f9; }}
+                h1, h2 {{ color: #333; }}
+                .screenshot {{ max-width: 800px; margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            <h1>Trading Report</h1>
+            <h2>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</h2>
+            
+            <h2>Transaction Summary</h2>
+            {df.to_html(classes='table')}
+            
+            <h2>Screenshots</h2>
+            {self._generate_screenshot_html()}
+        </body>
+        </html>
+        """
 
     def _generate_screenshot_html(self) -> str:
         """Generate HTML for screenshots"""
