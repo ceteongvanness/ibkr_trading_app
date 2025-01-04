@@ -47,6 +47,29 @@ class TradingApp:
             return drop
         return 0.0
 
+    def handle_market_closed(self) -> bool:
+        """Handle market closed situation. Returns True if should continue, False if should exit"""
+        wait_time = self.trading_hours.time_until_market_open()
+        hours = wait_time // 3600
+        minutes = (wait_time % 3600) // 60
+        
+        print(f"\nMarket is currently closed.")
+        print(f"Time until market opens: {hours} hours and {minutes} minutes")
+        print("\nOptions:")
+        print("1. Wait for market to open")
+        print("2. Exit application")
+        
+        while True:
+            choice = input("\nEnter your choice (1 or 2): ")
+            if choice == "1":
+                self.logger.info(f"Waiting {hours} hours and {minutes} minutes until market opens")
+                return True
+            elif choice == "2":
+                self.logger.info("User chose to exit during market closed period")
+                return False
+            else:
+                print("Invalid choice. Please enter 1 or 2.")
+
     def execute_trade(self, symbol: str, drop_level: int) -> bool:
         """Execute trade based on SPX drop level"""
         try:
@@ -117,12 +140,10 @@ class TradingApp:
                 try:
                     # Check if market is open
                     if not self.trading_hours.is_market_open():
-                        wait_time = self.trading_hours.time_until_market_open()
-                        self.logger.info(
-                            f"Market is closed. Waiting {wait_time//3600} hours and "
-                            f"{(wait_time%3600)//60} minutes until market opens."
-                        )
-                        self.market.sleep(min(wait_time, 3600))  # Sleep max 1 hour at a time
+                        if not self.handle_market_closed():
+                            print("\nExiting application due to closed market.")
+                            break
+                        self.market.sleep(min(self.trading_hours.time_until_market_open(), 3600))
                         continue
 
                     # Monitor SPX
@@ -153,7 +174,7 @@ class TradingApp:
                     # Calculate time until market close
                     time_to_close = self.trading_hours.time_until_market_close()
                     if time_to_close <= 0:
-                        self.logger.info("Market is closing. Ending monitoring session.")
+                        print("\nMarket is closing. Ending monitoring session.")
                         break
 
                     # Wait before next check
