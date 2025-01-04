@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ibkr-trading-app
+  namespace: trading
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ibkr-trading-app
+  template:
+    metadata:
+      labels:
+        app: ibkr-trading-app
+    spec:
+      containers:
+      - name: ibkr-trading-app
+        image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+        imagePullPolicy: Always
+        env:
+        - name: TRADING_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: trading-config
+              key: trading_mode
+        volumeMounts:
+        - name: trading-data
+          mountPath: /app/trading_records
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: trading-data
+        persistentVolumeClaim:
+          claimName: trading-data-pvc
+      - name: logs
+        persistentVolumeClaim:
+          claimName: logs-pvc
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trading-config
+  namespace: trading
+data:
+  trading_mode: "paper"  # Change to "live" for live trading
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trading-data-pvc
+  namespace: trading
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: logs-pvc
+  namespace: trading
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ibkr-trading-app
+  namespace: trading
+spec:
+  selector:
+    app: ibkr-trading-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
