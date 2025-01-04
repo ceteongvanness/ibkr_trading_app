@@ -114,15 +114,51 @@ python -m src.app
 
 ```
 ibkr_trading_app/
-├── src/                  # Source code
-│   ├── trading/         # Trading logic
-│   ├── utils/           # Utilities
-│   └── exceptions/      # Custom exceptions
-├── tests/               # Test files
-├── trading_records/     # Trading data
-│   ├── screenshots/     # Trade screenshots
-│   └── reports/        # Generated reports
-└── logs/               # Application logs
+├── LICENSE                    # MIT License file for the project
+├── README.md                  # Project documentation and setup instructions
+├── requirements.txt          # Production dependencies (ib_insync, pandas, etc.)
+├── requirements-dev.txt      # Development dependencies (pytest, black, etc.)
+├── run.py                    # Executable script to start the application
+├── setup.py                  # Package installation and distribution settings
+├── setup.cfg                 # Additional package configuration settings
+├── .gitignore               # Specifies which files Git should ignore
+│
+├── .vscode/                  # VS Code specific settings
+│   └── settings.json        # Editor configurations for Python
+│
+├── pyrightconfig.json       # Python type checking configuration
+│
+├── src/                     # Main source code directory
+│   ├── __init__.py         # Makes src a Python package, exports main classes
+│   ├── main.py             # Application entry point
+│   ├── app.py              # Main application logic and trading workflow
+│   ├── config.py           # Configuration settings (ports, paths, etc.)
+│   │
+│   ├── trading/            # Trading-related functionality
+│   │   ├── __init__.py     # Package initialization
+│   │   ├── market.py       # Market data handling (prices, connections)
+│   │   └── order.py        # Order management and execution
+│   │
+│   ├── utils/              # Utility functions and helper classes
+│   │   ├── __init__.py     # Package initialization
+│   │   ├── logger.py       # Logging configuration and setup
+│   │   ├── reporter.py     # Trade reporting and analysis
+│   │   └── screenshotter.py # Screenshot capture functionality
+│   │
+│   └── exceptions/         # Custom exception definitions
+│       ├── __init__.py     # Package initialization
+│       └── trading_exceptions.py # Trading-specific exceptions
+│
+├── logs/                   # Application logs directory
+│   └── .gitkeep           # Maintains empty directory in Git
+│
+├── trading_records/        # Trading data and records
+│   ├── screenshots/        # Trade screenshots storage
+│   │   └── .gitkeep       # Maintains empty directory in Git
+│   └── reports/           # Generated trade reports
+│       └── .gitkeep       # Maintains empty directory in Git
+│
+└── venv/                  # Virtual environment (not in Git)
 ```
 
 ## 📊 Reports & Records
