@@ -19,7 +19,7 @@ class TradingApp:
         self.reporter = Reporter()
         self.screenshotter = Screenshotter()
         self.trading_hours = TradingHours()
-        self.email_sender = EmailSender()
+        self.email_sender = EmailSender(raise_on_missing_credentials=False)  # Optional email
         self.spx_base_price: Optional[float] = None
         self.trading_summary = {
             'total_trades': 0,
@@ -97,18 +97,13 @@ class TradingApp:
 
             # Generate reports
             report_paths = self.reporter.generate_report()
-            
-            # Get recipient email from environment variable
-            recipient_email = os.getenv('TRADING_REPORT_EMAIL')
-            if not recipient_email:
-                self.logger.error("No recipient email configured")
-                return
 
-            # Send email with report
-            if self.email_sender.send_report(recipient_email, report_paths, self.trading_summary):
-                self.logger.info(f"Trading report sent to {recipient_email}")
+            # If email is configured, try to send report
+            recipient_email = os.getenv('TRADING_REPORT_EMAIL')
+            if recipient_email:
+                self.email_sender.send_report(recipient_email, report_paths, self.trading_summary)
             else:
-                self.logger.error("Failed to send trading report")
+                self.logger.info("No recipient email configured. Skipping email report.")
                 
         except Exception as e:
             self.logger.error(f"Error sending trading report: {str(e)}")
