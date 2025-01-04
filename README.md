@@ -19,20 +19,17 @@ An automated trading application that connects to Interactive Brokers (IBKR) for
 
 ### Monitoring & Recording
 - Real-time market data monitoring
-- Automatic screenshot capture of trades
-- Comprehensive transaction reporting:
-  - CSV reports for data analysis
-  - HTML reports with embedded screenshots
-- Detailed logging system
+- Automatic screenshot capture
+- Comprehensive reporting system
+- Email notifications with attachments
 
 ### Safety Features
-- Connection status verification
-- Price validation
+- Market hours validation
+- Price reasonability checks
 - Account balance monitoring
-- Trade execution confirmation
+- 50% cash reserve maintenance
 
 ## Prerequisites
-
 - Python 3.8 or higher
 - Interactive Brokers Workstation (IBW) or IB Gateway
 - IBKR account (paper or live trading)
@@ -41,7 +38,6 @@ An automated trading application that connects to Interactive Brokers (IBKR) for
 - AWS CLI (for AWS deployment)
 
 ## Local Installation
-
 1. Clone the repository:
 ```bash
 git clone https://github.com/ceteongvanness/ibkr_trading_app.git
@@ -63,6 +59,44 @@ pip install -r requirements.txt
 ```bash
 pip install -r requirements-dev.txt
 ```
+## Email Configuration
+### Setting up Gmail App Password:
+
+1. Enable 2-Step Verification:
+   - Go to [Google Account Security](https://myaccount.google.com/security)
+   - Click on "2-Step Verification"
+   - Follow the steps to enable it
+
+2. Create App Password:
+   - Go to [App Passwords](https://myaccount.google.com/apppasswords)
+   - Select "Mail" for the app
+   - Select "Other (Custom name)" for device
+   - Name it "IBKR Trading App"
+   - Click "Generate"
+   - Copy the 16-character password generated
+
+3. Set Environment Variables:
+
+On Mac/Linux:
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+echo 'export TRADING_EMAIL="your-gmail@gmail.com"' >> ~/.zshrc
+echo 'export TRADING_EMAIL_PASSWORD="your-16-char-app-password"' >> ~/.zshrc
+echo 'export TRADING_REPORT_EMAIL="recipient@email.com"' >> ~/.zshrc
+
+# Reload configuration
+source ~/.zshrc
+```
+
+On Windows:
+```powershell
+# Set environment variables
+setx TRADING_EMAIL "your-gmail@gmail.com"
+setx TRADING_EMAIL_PASSWORD "your-16-char-app-password"
+setx TRADING_REPORT_EMAIL "recipient@email.com"
+
+# Restart your terminal
+```
 
 ## Configuration
 
@@ -83,18 +117,45 @@ pip install -r requirements-dev.txt
    - Paper Trading: 7497 (default)
 
 ## Usage
-
-### Local Run
+1. Run the application:
 ```bash
 python run.py
 ```
 
-### Docker Run
-```bash
-# Build image
-docker build -t ibkr-trading-app .
+2. Select trading mode:
+   - 1: Live Trading
+   - 2: Paper Trading
 
-# Run container
+3. Enter stock symbol to monitor
+
+The application will:
+- Monitor SPX price movements
+- Execute trades based on drop levels
+- Take screenshots of trades
+- Generate reports
+- Send email notifications with attachments
+
+## Development
+
+1. Install development dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
+
+2. Run tests:
+```bash
+pytest
+```
+
+## Docker Deployment
+
+1. Build image:
+```bash
+docker build -t ibkr-trading-app .
+```
+
+2. Run container:
+```bash
 docker run -d ibkr-trading-app
 ```
 
@@ -127,64 +188,43 @@ kubectl logs -f deployment/ibkr-trading-app -n trading
 ## Project Structure
 
 The project follows a modular structure:
-```
+```plaintext
 ibkr_trading_app/
 ├── .github/                  # GitHub specific configurations
 │   └── workflows/           # GitHub Actions workflows
 │       └── deploy.yaml      # CI/CD pipeline configuration
 │
 ├── kubernetes/              # Kubernetes manifests
-│   └── deployment.yaml      # K8s deployment, service, and volume configs
+│   └── deployment.yaml      # K8s deployment configurations
 │
 ├── src/                     # Main source code directory
-│   ├── __init__.py         # Makes src a Python package
-│   ├── main.py             # Application entry point
-│   ├── app.py              # Main application logic with trading hours
-│   ├── config.py           # Application configuration
-│   │
 │   ├── trading/            # Trading-related functionality
-│   │   ├── __init__.py     # Package initialization
-│   │   ├── market.py       # Enhanced market data handling with retries
-│   │   └── order.py        # Order management with type fixes
+│   │   ├── market.py       # Market data handling
+│   │   └── order.py        # Order management
 │   │
 │   ├── utils/              # Utility functions
-│   │   ├── __init__.py     # Package initialization
 │   │   ├── logger.py       # Logging setup
 │   │   ├── reporter.py     # Trade reporting
 │   │   ├── screenshotter.py # Screenshot functionality
-│   │   └── trading_hours.py # Market hours management with timezone
+│   │   ├── trading_hours.py # Market hours management
+│   │   └── email_sender.py  # Email reporting system
 │   │
-│   └── exceptions/         # Custom exceptions
-│       ├── __init__.py     # Package initialization
-│       └── trading_exceptions.py # Trading exceptions
+│   ├── exceptions/         # Custom exceptions
+│   │   └── trading_exceptions.py 
+│   │
+│   ├── main.py             # Application entry point
+│   ├── app.py              # Main application logic
+│   └── config.py           # Configuration settings
 │
 ├── logs/                   # Application logs
-│   └── .gitkeep           # Git empty directory marker
-│
 ├── trading_records/        # Trading data storage
 │   ├── screenshots/        # Trade screenshots
-│   │   └── .gitkeep       # Git empty directory marker
 │   └── reports/           # Generated reports
-│       └── .gitkeep       # Git empty directory marker
 │
-├── .vscode/               # VS Code settings
-│   └── settings.json      # Editor configurations
-│
-├── tests/                 # Test directory
-│   ├── __init__.py        # Test package initialization
-│   ├── test_market.py     # Market module tests
-│   └── test_order.py      # Order module tests
-│
-├── .gitignore            # Git ignore patterns
-├── Dockerfile            # Docker container definition
-├── LICENSE               # MIT License
-├── README.md            # Project documentation
-├── pyrightconfig.json   # Python type checking config
-├── requirements.txt     # Production dependencies
-├── requirements-dev.txt # Development dependencies
-├── run.py              # Local run script
-├── setup.cfg           # Package configuration
-└── setup.py            # Package setup file
+├── tests/                 # Test files
+├── Dockerfile            # Docker configuration
+├── requirements.txt      # Production dependencies
+└── requirements-dev.txt  # Development dependencies
 ```
 
 ## Development
