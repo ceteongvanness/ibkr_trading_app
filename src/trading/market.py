@@ -1,18 +1,47 @@
 from typing import Optional
 from ib_insync import IB, Stock, Index
 from src.exceptions.trading_exceptions import MarketDataException
+import time
 
 class MarketData:
     def __init__(self):
         self.ib = IB()
+        self.connection_timeout = 30  # 30 seconds timeout
+        self.retry_interval = 5      # 5 seconds between retries
+        self.max_retries = 3        # Maximum number of connection attempts
 
     def connect(self, port: int, host: str = "127.0.0.1", client_id: int = 1) -> bool:
-        """Connect to IBKR"""
-        try:
-            self.ib.connect(host, port, clientId=client_id)
-            return True
-        except Exception as e:
-            raise MarketDataException(f"Connection failed: {str(e)}")
+        """Connect to IBKR with retries"""
+        for attempt in range(self.max_retries):
+            try:
+                # Try to disconnect if there's an existing connection
+                if self.ib.isConnected():
+                    self.ib.disconnect()
+                    time.sleep(1)  # Wait a bit before reconnecting
+                
+                # Attempt connection with timeout
+                self.ib.connect(
+                    host=host,
+                    port=port,
+                    clientId=client_id,
+                    timeout=self.connection_timeout
+                )
+                
+                # Wait for connection to stabilize
+                time.sleep(1)
+                
+                # Verify connection
+                if self.ib.isConnected():
+                    print(f"Successfully connected to IBKR on port {port}")
+                    return True
+                    
+            except Exception as e:
+                print(f"Connection attempt {attempt + 1} failed: {str(e)}")
+                if attempt < self.max_retries - 1:  # Don't sleep on last attempt
+                    print(f"Retrying in {self.retry_interval} seconds...")
+                    time.sleep(self.retry_interval)
+                    
+        raise MarketDataException("Failed to connect after all retry attempts")
 
     def disconnect(self):
         """Disconnect from IBKR"""
@@ -26,6 +55,9 @@ class MarketData:
     def get_market_price(self, symbol: str) -> Optional[float]:
         """Get current market price for a symbol"""
         try:
+            if not self.is_connected():
+                raise MarketDataException("Not connected to IBKR")
+
             # Determine if symbol is SPX
             if symbol == "SPX":
                 contract = Index(symbol, "CBOE", "USD")
@@ -34,45 +66,19 @@ class MarketData:
 
             self.ib.qualifyContracts(contract)
             
-            # Request market data
+            # Request market data with timeout
             ticker = self.ib.reqMktData(contract)
-            self.ib.sleep(2)  # Wait for data
+            timeout_time = time.time() + 10  # 10 seconds timeout
             
-            if ticker.last:
-                return ticker.last
-            elif ticker.close:
-                return ticker.close
-            return None
+            while time.time() < timeout_time:
+                self.ib.sleep(0.1)  # Small sleep to prevent CPU spinning
+                if ticker.last or ticker.close:
+                    return ticker.last or ticker.close
+            
+            raise MarketDataException(f"Timeout waiting for market data for {symbol}")
             
         except Exception as e:
             raise MarketDataException(f"Failed to get market price: {str(e)}")
-
-    def is_price_reasonable(self, symbol: str, price: float) -> bool:
-        """Check if price is within reasonable range"""
-        try:
-            contract = Stock(symbol, "SMART", "USD")
-            self.ib.qualifyContracts(contract)
-            
-            # Get historical data
-            bars = self.ib.reqHistoricalData(
-                contract,
-                endDateTime="",
-                durationStr="1 D",
-                barSizeSetting="1 day",
-                whatToShow="TRADES",
-                useRTH=True
-            )
-            
-            if not bars:
-                return False
-                
-            previous_close = bars[-1].close
-            price_diff_percentage = abs(price - previous_close) / previous_close * 100
-            
-            return price_diff_percentage <= 10
-            
-        except Exception as e:
-            raise MarketDataException(f"Failed to check price: {str(e)}")
 
     def sleep(self, seconds: int):
         """Sleep while keeping connection alive"""
