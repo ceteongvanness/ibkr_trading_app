@@ -2,6 +2,9 @@ from typing import Optional
 from ib_insync import IB, Stock, Index
 from src.exceptions.trading_exceptions import MarketDataException
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MarketData:
     def __init__(self):
@@ -29,6 +32,10 @@ class MarketData:
                 
                 # Wait for connection to stabilize
                 time.sleep(1)
+                
+                # Enable delayed market data
+                self.ib.reqMarketDataType(3)  # 3 = Delayed data
+                logger.info("Enabled delayed market data")
                 
                 # Verify connection
                 if self.ib.isConnected():
@@ -58,11 +65,13 @@ class MarketData:
             if not self.is_connected():
                 raise MarketDataException("Not connected to IBKR")
 
-            # Determine if symbol is SPX
+            # Create contract based on symbol type
             if symbol == "SPX":
-                contract = Index(symbol, "CBOE", "USD")
+                contract = Index('SPX', 'CBOE', 'USD')
+                logger.info("Created SPX index contract")
             else:
                 contract = Stock(symbol, "SMART", "USD")
+                logger.info(f"Created stock contract for {symbol}")
 
             self.ib.qualifyContracts(contract)
             
@@ -72,8 +81,22 @@ class MarketData:
             
             while time.time() < timeout_time:
                 self.ib.sleep(0.1)  # Small sleep to prevent CPU spinning
-                if ticker.last or ticker.close:
-                    return ticker.last or ticker.close
+                
+                # For indices, try last price first, then close
+                if symbol == "SPX":
+                    if ticker.last:
+                        logger.info(f"Got last price for SPX: {ticker.last}")
+                        return ticker.last
+                    elif ticker.close:
+                        logger.info(f"Got close price for SPX: {ticker.close}")
+                        return ticker.close
+                # For stocks, try different price types
+                else:
+                    price = (ticker.last or ticker.close or 
+                            ticker.bid or ticker.ask or ticker.high or ticker.low)
+                    if price:
+                        logger.info(f"Got price for {symbol}: {price}")
+                        return price
             
             raise MarketDataException(f"Timeout waiting for market data for {symbol}")
             
