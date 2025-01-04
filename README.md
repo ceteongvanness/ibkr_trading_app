@@ -72,7 +72,12 @@ pip install -r requirements-dev.txt
      - File → Global Configuration → API → Settings
      - Enable "Enable ActiveX and Socket Clients"
      - Set appropriate port numbers
-
+   - Enable “ActiveX and Socket Clients”
+   - Disable “Read-Only API”
+   - Enable “Create API message log file”
+   - Enable “Include market data in API log file”
+   - Change “Logging Level” to “Detail”
+   
 2. Port Configuration:
    - Live Trading: 7496 (default)
    - Paper Trading: 7497 (default)
