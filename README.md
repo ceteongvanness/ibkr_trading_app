@@ -144,7 +144,7 @@ ibkr_trading_app/
 │   │
 │   ├── trading/            # Trading-related functionality
 │   │   ├── __init__.py     # Package initialization
-│   │   ├── market.py       # Market data handling
+│   │   ├── market.py       # Enhanced market data handling with retries
 │   │   └── order.py        # Order management with type fixes
 │   │
 │   ├── utils/              # Utility functions
@@ -152,7 +152,7 @@ ibkr_trading_app/
 │   │   ├── logger.py       # Logging setup
 │   │   ├── reporter.py     # Trade reporting
 │   │   ├── screenshotter.py # Screenshot functionality
-│   │   └── trading_hours.py # Market hours management
+│   │   └── trading_hours.py # Market hours management with timezone
 │   │
 │   └── exceptions/         # Custom exceptions
 │       ├── __init__.py     # Package initialization
