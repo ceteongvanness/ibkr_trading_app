@@ -1,5 +1,5 @@
-from typing import Optional, Dict
-from ib_insync import IB, Stock, MarketOrder
+from typing import Optional, Dict, List
+from ib_insync import IB, Stock, MarketOrder, AccountValue
 from src.exceptions.trading_exceptions import OrderException
 
 class OrderManager:
@@ -9,13 +9,14 @@ class OrderManager:
     def check_sufficient_funds(self) -> bool:
         """Check if account has sufficient funds (50% reserve)"""
         try:
-            account_summary = self.ib.reqAccountSummary()
-            if account_summary:  # Check if account_summary is not None
-                for summary in account_summary:
-                    if summary.tag == "NetLiquidation":
-                        total_funds = float(summary.value)
-                        # Ensure we keep 50% in reserve
-                        return total_funds * 0.5 >= 0
+            # Explicitly type the account_summary
+            account_summary: List[AccountValue] = self.ib.reqAccountSummary() or []
+                
+            for summary in account_summary:
+                if summary.tag == "NetLiquidation":
+                    total_funds = float(summary.value)
+                    # Ensure we keep 50% in reserve
+                    return total_funds * 0.5 >= 0
             return False
             
         except Exception as e:
@@ -24,12 +25,13 @@ class OrderManager:
     def get_available_funds(self) -> Optional[float]:
         """Get available funds for trading"""
         try:
-            account_summary = self.ib.reqAccountSummary()
-            if account_summary:  # Check if account_summary is not None
-                for summary in account_summary:
-                    if summary.tag == "NetLiquidation":
-                        total_funds = float(summary.value)
-                        return total_funds * 0.5  # Return available funds (50% of total)
+            # Explicitly type the account_summary
+            account_summary: List[AccountValue] = self.ib.reqAccountSummary() or []
+                
+            for summary in account_summary:
+                if summary.tag == "NetLiquidation":
+                    total_funds = float(summary.value)
+                    return total_funds * 0.5  # Return available funds (50% of total)
             return None
             
         except Exception as e:
@@ -64,7 +66,7 @@ class OrderManager:
         """Get current positions"""
         try:
             positions: Dict[str, float] = {}
-            for position in self.ib.positions():
+            for position in self.ib.positions() or []:
                 symbol = position.contract.symbol
                 quantity = position.position
                 positions[symbol] = quantity

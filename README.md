@@ -122,15 +122,63 @@ kubectl logs -f deployment/ibkr-trading-app -n trading
 ## Project Structure
 
 The project follows a modular structure:
-- `src/`: Source code
-  - `trading/`: Trading logic
-  - `utils/`: Utility functions
-  - `exceptions/`: Custom exceptions
-- `kubernetes/`: K8s manifests
-- `.github/workflows/`: CI/CD pipelines
-- `tests/`: Test files
-- `logs/`: Application logs
-- `trading_records/`: Trading data
+ibkr_trading_app/
+├── .github/                  # GitHub specific configurations
+│   └── workflows/           # GitHub Actions workflows
+│       └── deploy.yaml      # CI/CD pipeline configuration
+│
+├── kubernetes/              # Kubernetes manifests
+│   └── deployment.yaml      # K8s deployment, service, and volume configs
+│
+├── src/                     # Main source code directory
+│   ├── __init__.py         # Makes src a Python package
+│   ├── main.py             # Application entry point
+│   ├── app.py              # Main application logic with trading hours
+│   ├── config.py           # Application configuration
+│   │
+│   ├── trading/            # Trading-related functionality
+│   │   ├── __init__.py     # Package initialization
+│   │   ├── market.py       # Market data handling
+│   │   └── order.py        # Order management with type fixes
+│   │
+│   ├── utils/              # Utility functions
+│   │   ├── __init__.py     # Package initialization
+│   │   ├── logger.py       # Logging setup
+│   │   ├── reporter.py     # Trade reporting
+│   │   ├── screenshotter.py # Screenshot functionality
+│   │   └── trading_hours.py # Market hours management
+│   │
+│   └── exceptions/         # Custom exceptions
+│       ├── __init__.py     # Package initialization
+│       └── trading_exceptions.py # Trading exceptions
+│
+├── logs/                   # Application logs
+│   └── .gitkeep           # Git empty directory marker
+│
+├── trading_records/        # Trading data storage
+│   ├── screenshots/        # Trade screenshots
+│   │   └── .gitkeep       # Git empty directory marker
+│   └── reports/           # Generated reports
+│       └── .gitkeep       # Git empty directory marker
+│
+├── .vscode/               # VS Code settings
+│   └── settings.json      # Editor configurations
+│
+├── tests/                 # Test directory
+│   ├── __init__.py        # Test package initialization
+│   ├── test_market.py     # Market module tests
+│   └── test_order.py      # Order module tests
+│
+├── .gitignore            # Git ignore patterns
+├── Dockerfile            # Docker container definition
+├── LICENSE               # MIT License
+├── README.md            # Project documentation
+├── pyrightconfig.json   # Python type checking config
+├── requirements.txt     # Production dependencies
+├── requirements-dev.txt # Development dependencies
+├── run.py              # Local run script
+├── setup.cfg           # Package configuration
+└── setup.py            # Package setup file
 
 ## Development
 
