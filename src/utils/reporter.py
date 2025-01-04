@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from config import TradingConfig
+from ..config import TradingConfig  # Updated import path
 
 class Reporter:
     def __init__(self):

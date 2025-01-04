@@ -1,17 +1,15 @@
 from typing import Optional
 import sys
-from trading.market import MarketData
-from trading.order import OrderManager
-from utils.logger import setup_logger
-from utils.reporter import Reporter
-from utils.screenshotter import Screenshotter
-from exceptions.trading_exceptions import TradingException
-from config import TradingConfig
+from .trading.market import MarketData
+from .trading.order import OrderManager
+from .utils.logger import setup_logger
+from .utils.reporter import Reporter
+from .utils.screenshotter import Screenshotter
+from .exceptions.trading_exceptions import TradingException
 
 class TradingApp:
     def __init__(self):
         self.logger = setup_logger("trading_app")
-        self.config = TradingConfig()
         self.market = MarketData()
         self.order_manager = OrderManager()
         self.reporter = Reporter()
@@ -148,10 +146,3 @@ class TradingApp:
         finally:
             self.market.disconnect()
             self.reporter.generate_report()
-
-def main():
-    app = TradingApp()
-    app.run()
-
-if __name__ == "__main__":
-    main()

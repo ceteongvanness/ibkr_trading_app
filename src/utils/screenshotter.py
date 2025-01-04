@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import pyautogui
-from config import TradingConfig
+from ..config import TradingConfig  # Updated import path
 
 class Screenshotter:
     def __init__(self):
