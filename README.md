@@ -44,7 +44,7 @@ An automated trading application that connects to Interactive Brokers (IBKR) for
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ibkr_trading_app.git
+git clone https://github.com/ceteongvanness/ibkr_trading_app.git
 cd ibkr_trading_app
 ```
 
