@@ -190,41 +190,66 @@ kubectl logs -f deployment/ibkr-trading-app -n trading
 The project follows a modular structure:
 ```plaintext
 ibkr_trading_app/
-├── .github/                  # GitHub specific configurations
-│   └── workflows/           # GitHub Actions workflows
-│       └── deploy.yaml      # CI/CD pipeline configuration
+├── .github/                  # GitHub Actions configuration
+│   └── workflows/           
+│       └── deploy.yaml      # CI/CD pipeline for AWS deployment
 │
-├── kubernetes/              # Kubernetes manifests
-│   └── deployment.yaml      # K8s deployment configurations
+├── .vscode/                 # VS Code settings
+│   └── settings.json        # Editor configurations for Python
+│
+├── kubernetes/              # Kubernetes configuration
+│   └── deployment.yaml      # K8s deployment, service, and volume configs
 │
 ├── src/                     # Main source code directory
 │   ├── trading/            # Trading-related functionality
-│   │   ├── market.py       # Market data handling
-│   │   └── order.py        # Order management
+│   │   ├── __init__.py     # Package initialization
+│   │   ├── market.py       # Market data handling and IBKR connection
+│   │   └── order.py        # Order management and execution
 │   │
 │   ├── utils/              # Utility functions
-│   │   ├── logger.py       # Logging setup
-│   │   ├── reporter.py     # Trade reporting
+│   │   ├── __init__.py     # Package initialization
+│   │   ├── env_loader.py   # Environment variables loader
+│   │   ├── logger.py       # Logging configuration
+│   │   ├── reporter.py     # Trade reporting and analysis
 │   │   ├── screenshotter.py # Screenshot functionality
 │   │   ├── trading_hours.py # Market hours management
 │   │   └── email_sender.py  # Email reporting system
 │   │
 │   ├── exceptions/         # Custom exceptions
-│   │   └── trading_exceptions.py 
+│   │   ├── __init__.py     # Package initialization
+│   │   └── trading_exceptions.py # Trading-specific exceptions
 │   │
-│   ├── main.py             # Application entry point
-│   ├── app.py              # Main application logic
-│   └── config.py           # Configuration settings
+│   ├── __init__.py        # Main package initialization
+│   ├── main.py            # Application entry point
+│   ├── app.py             # Main application logic
+│   └── config.py          # Application configuration
 │
-├── logs/                   # Application logs
+├── logs/                   # Application logs directory
+│   └── .gitkeep           # Git empty directory marker
+│
 ├── trading_records/        # Trading data storage
-│   ├── screenshots/        # Trade screenshots
-│   └── reports/           # Generated reports
+│   ├── screenshots/        # Trade screenshots storage
+│   │   └── .gitkeep       # Git empty directory marker
+│   └── reports/           # Generated trade reports
+│       └── .gitkeep       # Git empty directory marker
 │
-├── tests/                 # Test files
-├── Dockerfile            # Docker configuration
-├── requirements.txt      # Production dependencies
-└── requirements-dev.txt  # Development dependencies
+├── tests/                 # Test directory
+│   ├── __init__.py        # Test package initialization
+│   ├── test_market.py     # Market module tests
+│   └── test_order.py      # Order module tests
+│
+├── .env                   # Local environment variables (not in git)
+├── .env.template          # Environment variables template
+├── .gitignore            # Git ignore patterns
+├── Dockerfile            # Docker container definition
+├── LICENSE               # MIT License
+├── README.md            # Project documentation
+├── pyrightconfig.json   # Python type checking config
+├── requirements.txt     # Production dependencies
+├── requirements-dev.txt # Development dependencies
+├── run.py              # Local run script
+├── setup.cfg           # Package configuration
+└── setup.py            # Package setup file
 ```
 
 ## Development
