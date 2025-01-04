@@ -1,0 +1,67 @@
+name: Deploy to AWS EKS
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: ibkr-trading-app
+  EKS_CLUSTER_NAME: trading-cluster
+  NAMESPACE: trading
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+    - name: Update kube config
+      run: |
+        aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+    - name: Create namespace if not exists
+      run: |
+        kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Deploy to EKS
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Update deployment manifests with actual image
+        sed -i "s|\${ECR_REGISTRY}|$ECR_REGISTRY|g" kubernetes/deployment.yaml
+        sed -i "s|\${ECR_REPOSITORY}|$ECR_REPOSITORY|g" kubernetes/deployment.yaml
+        sed -i "s|\${IMAGE_TAG}|$IMAGE_TAG|g" kubernetes/deployment.yaml
+        
+        # Apply K8s manifests
+        kubectl apply -f kubernetes/deployment.yaml -n ${{ env.NAMESPACE }}
+        
+        # Verify deployment
+        kubectl rollout status deployment/ibkr-trading-app -n ${{ env.NAMESPACE }}
