@@ -51,6 +51,18 @@ class EmailSender:
             self.sender_email = sender_email
             self.sender_password = sender_password
 
+    def _format_float(self, value: Optional[float], default: float = 0.0) -> str:
+        """Format float value with proper handling of None"""
+        if value is None:
+            value = default
+        return f"${value:.2f}"
+
+    def _format_percentage(self, value: Optional[float], default: float = 0.0) -> str:
+        """Format percentage with proper handling of None"""
+        if value is None:
+            value = default
+        return f"{value:.2f}%"
+
     def _attach_trading_records(self, msg: MIMEMultipart) -> None:
         """Attach all files from trading_records directory"""
         # Attach files from screenshots directory
@@ -128,11 +140,6 @@ class EmailSender:
 
     def _create_email_body(self, trading_summary: TradingSummary) -> str:
         """Create HTML email body with trading summary"""
-        spx_base = trading_summary.get('spx_base_price', 0.0)
-        spx_final = trading_summary.get('spx_final_price', 0.0)
-        spx_drop = trading_summary.get('total_spx_drop', 0.0)
-        entry_price = trading_summary.get('entry_price', 0.0)
-
         return f"""
         <html>
         <body>
@@ -142,15 +149,15 @@ class EmailSender:
             <h3>Trading Summary:</h3>
             <ul>
                 <li>Total Trades: {trading_summary['total_trades']}</li>
-                <li>SPX Base Price: ${spx_base:.2f}</li>
-                <li>SPX Final Price: ${spx_final:.2f}</li>
-                <li>Total SPX Drop: {spx_drop:.2f}%</li>
+                <li>SPX Base Price: {self._format_float(trading_summary.get('spx_base_price'))}</li>
+                <li>SPX Final Price: {self._format_float(trading_summary.get('spx_final_price'))}</li>
+                <li>Total SPX Drop: {self._format_percentage(trading_summary.get('total_spx_drop'))}</li>
             </ul>
 
             <h3>Trading Details:</h3>
             <ul>
                 <li>Symbol: {trading_summary['symbol']}</li>
-                <li>Entry Price: ${entry_price:.2f}</li>
+                <li>Entry Price: {self._format_float(trading_summary.get('entry_price'))}</li>
                 <li>Trading Mode: {trading_summary['trading_mode']}</li>
             </ul>
 
