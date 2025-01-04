@@ -26,8 +26,8 @@ ENV/
 env/
 
 # Trading Records
-trading_records/screenshots/*
-trading_records/reports/*
+# trading_records/screenshots/*
+# trading_records/reports/*
 !trading_records/screenshots/.gitkeep
 !trading_records/reports/.gitkeep
 
