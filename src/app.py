@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 import sys
 import os
 from datetime import datetime
@@ -8,7 +8,7 @@ from .utils.logger import setup_logger
 from .utils.reporter import Reporter
 from .utils.screenshotter import Screenshotter
 from .utils.trading_hours import TradingHours
-from .utils.email_sender import EmailSender
+from .utils.email_sender import EmailSender, TradingSummary
 from .exceptions.trading_exceptions import TradingException
 
 class TradingApp:
@@ -19,16 +19,16 @@ class TradingApp:
         self.reporter = Reporter()
         self.screenshotter = Screenshotter()
         self.trading_hours = TradingHours()
-        self.email_sender = EmailSender(raise_on_missing_credentials=False)  # Optional email
+        self.email_sender = EmailSender(raise_on_missing_credentials=False)
         self.spx_base_price: Optional[float] = None
-        self.trading_summary = {
+        self.trading_summary: TradingSummary = {
             'total_trades': 0,
-            'spx_base_price': None,
-            'spx_final_price': None,
-            'total_spx_drop': 0,
-            'symbol': None,
-            'entry_price': None,
-            'trading_mode': None
+            'spx_base_price': 0.0,
+            'spx_final_price': 0.0,
+            'total_spx_drop': 0.0,
+            'symbol': '',
+            'entry_price': 0.0,
+            'trading_mode': ''
         }
 
     def connect_to_server(self, port: int) -> bool:
@@ -51,7 +51,8 @@ class TradingApp:
         """Monitor SPX price and calculate drop percentage"""
         if self.spx_base_price is None:
             self.spx_base_price = self.market.get_market_price("SPX")
-            self.trading_summary['spx_base_price'] = self.spx_base_price
+            if self.spx_base_price:
+                self.trading_summary['spx_base_price'] = self.spx_base_price
             self.logger.info(f"SPX base price set: ${self.spx_base_price}")
         
         current_price = self.market.get_market_price("SPX")
