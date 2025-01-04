@@ -4,28 +4,56 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TypedDict
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+class TradingSummary(TypedDict, total=False):
+    total_trades: int
+    spx_base_price: float
+    spx_final_price: float
+    total_spx_drop: float
+    symbol: str
+    entry_price: float
+    trading_mode: str
 
 class EmailSender:
-    def __init__(self):
+    def __init__(self, raise_on_missing_credentials: bool = False) -> None:
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
+
+        # Initialize credentials
         sender_email = os.getenv('TRADING_EMAIL')
         sender_password = os.getenv('TRADING_EMAIL_PASSWORD')
-        
-        if not sender_email or not sender_password:
-            raise ValueError("Email credentials not found in environment variables")
-            
-        self.sender_email: str = sender_email
-        self.sender_password: str = sender_password
 
-    def send_report(self, recipient_email: str, report_paths: List[Path], trading_summary: Dict) -> bool:
+        # Check if both credentials are present
+        if not sender_email or not sender_password:
+            msg = ("Email credentials not found. Set TRADING_EMAIL and TRADING_EMAIL_PASSWORD "
+                  "environment variables to enable email reporting.")
+            if raise_on_missing_credentials:
+                raise ValueError(msg)
+            logger.warning(msg)
+            self.is_configured = False
+            self.sender_email = None
+            self.sender_password = None
+        else:
+            self.is_configured = True
+            self.sender_email = sender_email
+            self.sender_password = sender_password
+
+    def send_report(self, recipient_email: str, report_paths: List[Path], trading_summary: TradingSummary) -> bool:
         """Send trading report via email"""
+        if not self.is_configured or not self.sender_email or not self.sender_password:
+            logger.warning("Email sender not configured. Skipping email report.")
+            return False
+
         try:
             # Create message
             msg = MIMEMultipart()
-            msg['From'] = self.sender_email  # Now self.sender_email is definitely str
+            # Now we know sender_email is str due to is_configured check
+            msg['From'] = str(self.sender_email)
             msg['To'] = recipient_email
             msg['Subject'] = f"Trading Report - {datetime.now().strftime('%Y-%m-%d')}"
 
@@ -48,16 +76,20 @@ class EmailSender:
             # Send email
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
+                # We've already checked these are not None
+                assert self.sender_email is not None
+                assert self.sender_password is not None
                 server.login(self.sender_email, self.sender_password)
                 server.send_message(msg)
 
+            logger.info(f"Trading report sent to {recipient_email}")
             return True
 
         except Exception as e:
-            print(f"Error sending email: {str(e)}")
+            logger.error(f"Error sending email: {str(e)}")
             return False
 
-    def _create_email_body(self, trading_summary: Dict) -> str:
+    def _create_email_body(self, trading_summary: TradingSummary) -> str:
         """Create HTML email body with trading summary"""
         return f"""
         <html>
