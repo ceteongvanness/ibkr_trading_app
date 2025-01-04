@@ -30,6 +30,7 @@ class SmtpConfig(NamedTuple):
 class EmailSender:
     def __init__(self, raise_on_missing_credentials: bool = False) -> None:
         self.smtp_config = SmtpConfig()
+        self.trading_records_dir = Path("trading_records")
         
         # Initialize credentials
         sender_email = os.getenv('TRADING_EMAIL')
@@ -50,8 +51,48 @@ class EmailSender:
             self.sender_email = sender_email
             self.sender_password = sender_password
 
+    def _attach_trading_records(self, msg: MIMEMultipart) -> None:
+        """Attach all files from trading_records directory"""
+        # Attach files from screenshots directory
+        screenshots_dir = self.trading_records_dir / "screenshots"
+        if screenshots_dir.exists():
+            for file_path in screenshots_dir.glob("*.*"):
+                if file_path.name == '.gitkeep':
+                    continue
+                try:
+                    with open(file_path, 'rb') as file:
+                        attachment = MIMEApplication(file.read())
+                        attachment.add_header(
+                            'Content-Disposition', 
+                            'attachment', 
+                            filename=f'screenshots/{file_path.name}'
+                        )
+                        msg.attach(attachment)
+                        logger.info(f"Attached screenshot: {file_path.name}")
+                except Exception as e:
+                    logger.error(f"Error attaching screenshot {file_path}: {str(e)}")
+
+        # Attach files from reports directory
+        reports_dir = self.trading_records_dir / "reports"
+        if reports_dir.exists():
+            for file_path in reports_dir.glob("*.*"):
+                if file_path.name == '.gitkeep':
+                    continue
+                try:
+                    with open(file_path, 'rb') as file:
+                        attachment = MIMEApplication(file.read())
+                        attachment.add_header(
+                            'Content-Disposition', 
+                            'attachment', 
+                            filename=f'reports/{file_path.name}'
+                        )
+                        msg.attach(attachment)
+                        logger.info(f"Attached report: {file_path.name}")
+                except Exception as e:
+                    logger.error(f"Error attaching report {file_path}: {str(e)}")
+
     def send_report(self, recipient_email: str, report_paths: List[Path], trading_summary: TradingSummary) -> bool:
-        """Send trading report via email"""
+        """Send trading report via email with all trading records"""
         if not self.is_configured or not self.sender_email or not self.sender_password:
             logger.warning("Email sender not configured. Skipping email report.")
             return False
@@ -67,17 +108,8 @@ class EmailSender:
             body = self._create_email_body(trading_summary)
             msg.attach(MIMEText(body, 'html'))
 
-            # Attach reports
-            for report_path in report_paths:
-                if report_path.exists():
-                    with open(report_path, 'rb') as file:
-                        attachment = MIMEApplication(file.read(), _subtype="csv")
-                        attachment.add_header(
-                            'Content-Disposition', 
-                            'attachment', 
-                            filename=report_path.name
-                        )
-                        msg.attach(attachment)
+            # Attach all trading records
+            self._attach_trading_records(msg)
 
             # Send email
             with smtplib.SMTP(self.smtp_config.server, self.smtp_config.port) as server:
@@ -122,7 +154,7 @@ class EmailSender:
                 <li>Trading Mode: {trading_summary['trading_mode']}</li>
             </ul>
 
-            <p>Please find the detailed reports attached.</p>
+            <p>Please find the detailed reports and screenshots attached.</p>
             
             <p>Best regards,<br>IBKR Trading Bot</p>
         </body>
